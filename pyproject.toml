@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "arena-addon"
+version = "0.1.0"
+description = "MCP addon that lets jcode use arena.ai Agent Mode as sub-agents."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.optional-dependencies]
+cdp = ["playwright>=1.40"]
+
+[tool.setuptools.packages.find]
+include = ["arena_addon*"]
