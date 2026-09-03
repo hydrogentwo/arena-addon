@@ -134,6 +134,13 @@ All knobs are environment variables or CLI flags.
 CLI flags: `--driver`, `--mock-work-seconds`, `--mock-delay-seconds`,
 `--store`, `--poll-interval`.
 
+Useful operations:
+
+```bash
+python3 -m arena_addon --print-tools     # dump the MCP tool schemas (debug/config probe)
+python3 -m arena_addon --self-check      # run a full mock agent end to end; exit 0 on success
+```
+
 ---
 
 ## Limitations & tuning

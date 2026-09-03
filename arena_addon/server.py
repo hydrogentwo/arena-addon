@@ -334,6 +334,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--mock-delay-seconds", type=float, default=None)
     parser.add_argument("--poll-interval", type=float, default=1.0)
     parser.add_argument("--store", default=None, help="path to the durable session store JSON")
+    parser.add_argument(
+        "--print-tools",
+        action="store_true",
+        help="Print the MCP tool descriptors as JSON and exit (no server).",
+    )
+    parser.add_argument(
+        "--self-check",
+        action="store_true",
+        help="Validate imports, driver, and store are healthy, then exit 0.",
+    )
     args = parser.parse_args(argv)
 
     from .drivers import create_driver
@@ -347,6 +357,20 @@ def main(argv: list[str] | None = None) -> int:
         kwargs["delay_seconds"] = args.mock_delay_seconds
     driver = create_driver(args.driver, **kwargs)
     coord = Coordinator(driver, store, poll_interval=args.poll_interval)
+
+    if args.print_tools:
+        print(json.dumps({"tools": coord.tool_specs()}, indent=2, ensure_ascii=False))
+        return 0
+
+    if args.self_check:
+        # Exercise a full mock run to prove the plumbing works.
+        r = coord.call_tool("arena_spawn", {"task": "self check"})
+        sid = json.loads(r["content"][0]["text"])["session_id"]
+        w = coord.wait(sid, timeout_secs=30)
+        status = w.get("status")
+        print(f"arena-addon self-check ok (driver={driver.name}, status={status})")
+        return 0 if status in TERMINAL_STATES and status not in ("failed", "timeout") else 1
+
     server = McpServer(coord)
     server.run()
     return 0

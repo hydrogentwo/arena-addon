@@ -82,6 +82,66 @@ class McpHandshakeTest(unittest.TestCase):
         text = out[1]["result"]["content"][0]["text"]
         self.assertIn("unknown tool", text)
 
+    def test_ping_supported(self):
+        out = run_mcp([
+            {"jsonrpc": "2.0", "id": 0, "method": "initialize", "params": {}},
+            {"jsonrpc": "2.0", "id": 1, "method": "ping", "params": {}},
+        ])
+        self.assertEqual(out[1]["result"], {})
+
+    def test_unknown_method_error(self):
+        out = run_mcp([
+            {"jsonrpc": "2.0", "id": 0, "method": "initialize", "params": {}},
+            {"jsonrpc": "2.0", "id": 1, "method": "prompts/list", "params": {}},
+        ])
+        self.assertEqual(out[1]["error"]["code"], -32601)
+
+    def test_notification_gets_no_response(self):
+        # notifications/initialized carries no id and must not produce a reply.
+        out = run_mcp([
+            {"jsonrpc": "2.0", "id": 0, "method": "initialize", "params": {}},
+            {"jsonrpc": "2.0", "method": "notifications/initialized"},
+        ])
+        # Only the initialize reply arrives.
+        self.assertEqual(len(out), 1)
+        self.assertEqual(out[0]["id"], 0)
+
+    def test_malformed_line_ignored(self):
+        # Invalid JSON on the wire must not kill the server.
+        payload = 'not json\n{"jsonrpc":"2.0","id":0,"method":"initialize","params":{}}\n'
+        env = dict(os.environ)
+        env["ARENA_ADDON_DIR"] = tempfile.mkdtemp()
+        p = subprocess.run(
+            [sys.executable, "-m", "arena_addon", "--driver", "mock"],
+            input=payload, capture_output=True, text=True, timeout=60, env=env,
+            cwd=ROOT,
+        )
+        self.assertEqual(p.returncode, 0)
+        self.assertIn("arena-addon", p.stdout)
+
+    def test_self_check_exit_zero(self):
+        env = dict(os.environ)
+        env["ARENA_ADDON_DIR"] = tempfile.mkdtemp()
+        p = subprocess.run(
+            [sys.executable, "-m", "arena_addon", "--driver", "mock",
+             "--mock-work-seconds", "0.1", "--mock-delay-seconds", "0.05",
+             "--self-check"],
+            capture_output=True, text=True, timeout=60, env=env, cwd=ROOT,
+        )
+        self.assertEqual(p.returncode, 0)
+        self.assertIn("self-check ok", p.stdout)
+
+    def test_print_tools(self):
+        env = dict(os.environ)
+        env["ARENA_ADDON_DIR"] = tempfile.mkdtemp()
+        p = subprocess.run(
+            [sys.executable, "-m", "arena_addon", "--driver", "mock", "--print-tools"],
+            capture_output=True, text=True, timeout=30, env=env, cwd=ROOT,
+        )
+        self.assertEqual(p.returncode, 0)
+        data = json.loads(p.stdout)
+        self.assertEqual(len(data["tools"]), 5)
+
 
 class CoordinatorTest(unittest.TestCase):
     def test_full_flow_single_process(self):
