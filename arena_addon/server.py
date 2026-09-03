@@ -105,6 +105,18 @@ class Coordinator:
                 break
             time.sleep(interval)
         rec = self.store.get(session_id) or {}
+        status = rec.get("status")
+        # Harden against a monitor thread that stalled/died: pull the driver
+        # directly so a real terminal state is never masked by a stale store.
+        if status not in TERMINAL_STATES:
+            try:
+                snap = self.driver.status(self._driver_sid(session_id))
+                s2, r2, o2 = snap.get("status"), snap.get("result"), snap.get("output", "")
+                if s2 in TERMINAL_STATES:
+                    self.store.update(session_id, status=s2, result=r2, output=o2)
+                    rec = self.store.get(session_id) or rec
+            except Exception:
+                pass
         return {
             "session_id": session_id,
             "status": rec.get("status"),
