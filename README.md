@@ -30,6 +30,17 @@ addon ships two interchangeable drivers behind one MCP interface:
 Use `mock` to exercise the contract end to end, then switch to `cdp` for real
 Arena agents.
 
+> **Integration surface (why automation, not an official SDK).** arena.ai has
+> no public Agent Mode API. Inspecting the app, repo-connected "coding" sessions
+> do hit an internal endpoint `POST /api/coding-agent/sessions` (it returns a
+> `sessionId`, with progress streamed afterwards). That endpoint is undocumented,
+> subject to change, and sits behind the same login/Cloudflare as the UI.
+> Relying on it would likely break for reasons outside your control and may also
+> conflict with arena.ai's terms of use. The addon therefore defaults to browser
+> automation through your own logged-in session (the `cdp` driver), which is
+> faithful to "go to arena.ai" and works for both repo-connected and plain chat
+> Agent Mode. Always check you are allowed to automate a site you depend on.
+
 ---
 
 ## Quick start (mock, no browser)
