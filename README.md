@@ -43,6 +43,7 @@ Register it with jcode:
 
 ```bash
 ./register.sh            # writes {"mcpServers": {"arena": ...}} into ~/.jcode/mcp.json
+# On Termux (no /usr/bin/env):  bash register.sh
 ```
 
 Restart jcode (or reload its MCP servers). Then tell jcode something like:
